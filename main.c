@@ -194,7 +194,7 @@ static void SystemClock_Config(void)
 
 /**
   * @brief Función de callback de las lineas de interrupción. En este caso la pulsación del joystick.
-	* @param htim: Timer que ha realizado la cuenta e invoca a la función de callback  
+	* @param GPIO_Pin: Pin que provoca la interrupción
   * @retval None
   */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
