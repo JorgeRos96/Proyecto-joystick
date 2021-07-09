@@ -3,7 +3,7 @@
   * @file    Templates/Src/main.c 
   * @author  MCD Application Team
   * @brief   Proyecto de manejo del joystick de la tarjeta de aplicaciones 
-	*					 (MAB). Para ello se utiliza el CMSIS_OS2 para evitar los rebotes,
+	*					 (MAB). Para ello se utiliza el RTOS v2 para evitar los rebotes,
 	*					 y se controla el numero de pulsaciones mediante una variable por
 	*					 cada lado del joystick. 
   *

@@ -1,11 +1,31 @@
+/**
+  ******************************************************************************
+  * @file    Templates/Src/joystick.c
+  * @author  MCD Application Team
+  * @brief   Fichero de inicialización del joystick de la tarjeta de aplicaciones.					 
+	*					 Pines del joystick:
+	*					 PIN UP-> 	 PF2	
+	*					 PIN DOWN->	 PF3	
+	*					 PIN CENTER->PF14	
+	*					 PIN LEFT->	 PF13
+	*					 PIN RIGHT-> PF10	
+  *
+  * @note    modified by ARM
+  *          The modifications allow to use this file as User Code Template
+  *          within the Device Family Pack.
+  ******************************************************************************
+  * 
+  ******************************************************************************
+  */
+
 #include "joystick.h"
 
 /**
-  * @brief GPIO Initialization Function
+  * @brief Funcion de inicializacion del los pulsadores del joystick
   * @param None
   * @retval None
   */
-void MX_GPIO_Init(void)
+void GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 

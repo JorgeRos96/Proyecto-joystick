@@ -1,3 +1,19 @@
+/**
+  ******************************************************************************
+  * @file    Templates/Src/Thread.c
+  * @author  MCD Application Team
+  * @brief   Fichero qe trata los distintas funciones de los hilos que se
+	*					 que se ejecutan en el RTOS.
+  *
+  * @note    modified by ARM
+  *          The modifications allow to use this file as User Code Template
+  *          within the Device Family Pack.
+  ******************************************************************************
+  * 
+  ******************************************************************************
+  */
+
+
 #include "stdio.h"
 #include "stm32f4xx_hal.h"
 #include "cmsis_os2.h"  
