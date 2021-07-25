@@ -39,6 +39,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
+
+
 #ifdef _RTE_
 #include "RTE_Components.h"             // Component selection
 #endif
@@ -51,7 +53,7 @@
 extern uint64_t app_main_stk[];
 extern const osThreadAttr_t app_main_attr;/* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
-  static void Error_Handler(void);
+  static void Error_Handler(int fallo);
 	extern void app_main (void *arg); 
 
 #endif /* __MAIN_H */

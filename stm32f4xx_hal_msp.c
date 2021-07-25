@@ -92,16 +92,6 @@ void HAL_MspDeInit(void)
    */
 }
 
-/**
-  * @}
-  */
 
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

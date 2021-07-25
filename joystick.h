@@ -1,4 +1,6 @@
 #include "stm32f4xx_hal.h"
 
 
-void MX_GPIO_Init(void);
+void Init_GPIO(void);
+void IRQ_Fall_Enable(int pin);
+void IRQ_Rise_Enable(int pin);

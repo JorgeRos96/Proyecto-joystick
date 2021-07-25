@@ -3,9 +3,29 @@
   * @file    Templates/Src/main.c 
   * @author  MCD Application Team
   * @brief   Proyecto de manejo del joystick de la tarjeta de aplicaciones 
-	*					 (MAB). Para ello se utiliza el RTOS v2 para evitar los rebotes,
-	*					 y se controla el numero de pulsaciones mediante una variable por
-	*					 cada lado del joystick. 
+	*					 (MAB). Se emplea el RTOS v2 para la realización del proyecto, y se
+	*					 utilizan los hilos para realizar la gestión de los rebotes del joystick.
+	*					 Se activa la interrupción del flanco de bajada para que al producirse 
+	*					 la pulsación se desactive la interrupción de subida y se active la de 
+	*					 bajada evitando asi que se puedan filtrar espurios de los rebotes del 
+	*					 pulsador.
+	*					 Se configura el reloj del sistema para que trabaje a una frecuencia 
+	*					 de 180 MHz utilizando como fuente de reloj el PLL con el HSI.
+	*					 Se controla el número de pulsaciones mediante una variable por
+	*					 cada pulsación del joystick. Se utiliza la USART para enviar un mensaje
+	*					 al terminal indicando la pulsación que se ha realizado.
+	*					 Se configuran los pines de tx y rx de la USART en el RTE_Device.h 
+	*					 que son:
+	*							-Pin de tx: PD8
+	*							-Pin de rx: PD9
+	*					
+	*					 Se conecta el joystick a los siguientes pines:
+	*						
+	*					 PIN UP-> 	 PF2	
+	*					 PIN DOWN->	 PF3	
+	*					 PIN CENTER->PF14	
+	*					 PIN LEFT->	 PF3
+	*					 PIN RIGHT-> PF10
   *
   * @note    modified by ARM
   *          The modifications allow to use this file as User Code Template
@@ -17,6 +37,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "USART.h"
 #include "joystick.h"
 
 #ifdef _RTE_
@@ -49,32 +70,10 @@ uint32_t HAL_GetTick (void) {
 
 #endif
 
-/* Private define ------------------------------------------------------------*/
-#define SIGLEFT    0x001
-#define SIGDOWN    0x002
-#define SIGRIGHT   0x004
-#define SIGUP 		 0x008
-#define SIGCENTER  0x010
-#define SIGBAJADAL 0X020
-#define SIGBAJADAR 0X040
-#define SIGBAJADAU 0X080
-#define SIGBAJADAD 0X100
-#define SIGBAJADAC 0X200
-
-/* Private variables ---------------------------------------------------------*/
-
-extern osThreadId_t tid_rebotes;
-
-
-int UP = 0;
-int DOWN = 0;
-int RIGHT = 0;
-int LEFT = 0;
-int CENTER = 0;
 
 /* Private function prototypes -----------------------------------------------*/
 static void SystemClock_Config(void);
-static void Error_Handler(void);
+static void Error_Handler(int fallo);
 
 /* Private functions ---------------------------------------------------------*/
 
@@ -95,21 +94,32 @@ int main(void)
              handled in milliseconds basis.
        - Low Level Initialization
      */
-  HAL_Init();
+  if (HAL_Init() != HAL_OK)
+		Error_Handler(0);
 
-  /* Configure the system clock to 168 MHz */
+  /* Inicialización y configuración del reloj a 180 MHz */
   SystemClock_Config();
   SystemCoreClockUpdate();
-
-  /* Add your application code here
-     */
-  MX_GPIO_Init();
+	
+	/*Inicialización del joystick*/
+	Init_GPIO();
+	
+	/* Inicialización de la USART a traves de la función init_USART de la libreria USART
+	*	 y habilitación de la transmisión
+	*							- Baudrate = 9600 baud
+	*							- Word length = 8 bits
+	*							- Un bit de stop
+	*							- Sin bit de paridad
+	*							- Sin control de flujo
+	*/
+	if (init_USART() != 0)
+		Error_Handler(2);
 
 #ifdef RTE_CMSIS_RTOS2
   /* Initialize CMSIS-RTOS2 */
   osKernelInitialize ();
 
- osThreadNew(app_main, NULL, &app_main_attr); 
+	osThreadNew(app_main, NULL, &app_main_attr); 
 
   /* Start thread execution */
   osKernelStart();
@@ -122,19 +132,21 @@ int main(void)
 }
 
 /**
-  * @brief  System Clock Configuration
-  *         The system Clock is configured as follow : 
-  *            System Clock source            = PLL (HSE)
-  *            SYSCLK(Hz)                     = 168000000
-  *            HCLK(Hz)                       = 168000000
+  * @brief  Función de configuración del reloj del sistema en el que se utiliza
+	*					como fuente de reloj del sistema el PLL con el HSI como fuente de 
+	*					reloj. Se configura una frecuencia del sistema de 180 MHz.
+  *         Se configuran los paramteros de la siguiente manera: 
+  *            System Clock source            = PLL (HSI)
+  *            SYSCLK(Hz)                     = 180000000
+  *            HCLK(Hz)                       = 180000000
   *            AHB Prescaler                  = 1
   *            APB1 Prescaler                 = 4
   *            APB2 Prescaler                 = 2
-  *            HSE Frequency(Hz)              = 8000000
-  *            PLL_M                          = 25
-  *            PLL_N                          = 336
+  *            HSI Frequency(Hz)              = 16000000
+  *            PLL_M                          = 8
+  *            PLL_N                          = 180
   *            PLL_P                          = 2
-  *            PLL_Q                          = 7
+  *            PLL_Q                          = 4
   *            VDD(V)                         = 3.3
   *            Main regulator output voltage  = Scale1 mode
   *            Flash Latency(WS)              = 5
@@ -142,165 +154,86 @@ int main(void)
   * @retval None
   */
 static void SystemClock_Config(void)
-{
-  RCC_ClkInitTypeDef RCC_ClkInitStruct;
-  RCC_OscInitTypeDef RCC_OscInitStruct;
+{ 
+	RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-  /* Enable Power Control clock */
+  /** Configure the main internal regulator output voltage
+  */
   __HAL_RCC_PWR_CLK_ENABLE();
-
-  /* The voltage scaling allows optimizing the power consumption when the device is 
-     clocked below the maximum system frequency, to update the voltage scaling value 
-     regarding system frequency refer to product datasheet.  */
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-
-  /* Enable HSE Oscillator and activate PLL with HSE as source */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+	
+  /** Se configura el HSI como fuente de reloj del PLL y se configuran
+	* 	los parametros del PLL para ajusta la frecuencia a 180 MHz con una
+	* 	frecuencia del HSI de 16 MHZ (por defecto).
+	* 	SYSCLK =[(16MHz(frecuencia HSI)/8(PLLM))*180 (PLLN)]/2 (PLLP) = 180 MHz
+  */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 25;
-  RCC_OscInitStruct.PLL.PLLN = 336;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLM = 8;
+  RCC_OscInitStruct.PLL.PLLN = 180;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = 7;
-  if(HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  RCC_OscInitStruct.PLL.PLLQ = 4;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
-    /* Initialization Error */
-    Error_Handler();
+    Error_Handler(1);
   }
-
-  /* Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2 
-     clocks dividers */
-  RCC_ClkInitStruct.ClockType = (RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2);
+  /** Se activa el modo de Over Drive para poder alcanzar los 180 MHz
+	* 	como frecuencia del sistema
+  */
+  if (HAL_PWREx_EnableOverDrive() != HAL_OK)
+  {
+    Error_Handler(1);
+  }
+  /** Se selecciona el PLL como fuente de reloj del sistema y se configuran los parametros
+	*		para configurar el HCLK, PCLK1 y PCLK2. La frecuencia máxima del HCLK es 180 MHZ, la 
+	*		frecuencia máxima del PCLK1 es de 45 MHZ y la frecuencia máxima del PCLK2 es de 90 MHz
+	*		HCLK = SYSCK/AHB = 180 MHz / 1 = 180 MHz
+	*		PCLK1 = HCLK/APB1 = 180 MHz / 4 = 45 MHZ
+	*		PCLK2 = HCLK/APB2 = 180 MHz / 2 = 90 MHZ
+  */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;  
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;  
-  if(HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
-  {
-    /* Initialization Error */
-    Error_Handler();
-  }
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-  /* STM32F405x/407x/415x/417x Revision Z devices: prefetch is supported */
-  if (HAL_GetREVID() == 0x1001)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
-    /* Enable the Flash prefetch */
-    __HAL_FLASH_PREFETCH_BUFFER_ENABLE();
+    Error_Handler(1);
   }
 }
 
 
 
+
 /**
-  * @brief Función de callback de las lineas de interrupción. En este caso la pulsación del joystick.
-	* @param GPIO_Pin: Pin que provoca la interrupción
+  * @brief  Función que se realiza cuando se ha producido algun error.
+	* @param  fallo: Variable que recoge el error producido
   * @retval None
   */
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-	if( GPIO_Pin == GPIO_PIN_2){
-		HAL_NVIC_DisableIRQ(EXTI2_IRQn);
-		if(UP == 0)
-		{
-			UP = 1;
-			osThreadFlagsSet (tid_rebotes, SIGUP);
-		}	
-		else {
-		UP = 0;
-		osThreadFlagsSet (tid_rebotes, SIGBAJADAU);
-		}		
-}
-	if( GPIO_Pin == GPIO_PIN_3){
-		HAL_NVIC_DisableIRQ(EXTI3_IRQn);
-		if(DOWN == 0)
-		{
-			DOWN = 1;
-			osThreadFlagsSet (tid_rebotes, SIGDOWN);
-		}	
-		else {
-		DOWN = 0;
-		osThreadFlagsSet (tid_rebotes, SIGBAJADAD);
-		}		
-}
-	if( GPIO_Pin == GPIO_PIN_5){
-	 HAL_NVIC_DisableIRQ(EXTI9_5_IRQn);
-		if(LEFT == 0)
-		{
-			LEFT = 1;
-			osThreadFlagsSet (tid_rebotes, SIGLEFT);
-		}	
-		else {
-		LEFT = 0;
-		osThreadFlagsSet (tid_rebotes, SIGBAJADAL);
-		}		
-}
-if( GPIO_Pin == GPIO_PIN_14){
-	 HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
-		if(CENTER == 0)
-		{
-			CENTER = 1;
-			osThreadFlagsSet (tid_rebotes, SIGCENTER);
-		}	
-		else {
-		CENTER = 0;
-		osThreadFlagsSet (tid_rebotes, SIGBAJADAC);
-		}		
-}
-if( GPIO_Pin == GPIO_PIN_10){
-	 HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
-		if(RIGHT == 0)
-		{
-			RIGHT = 1;
-			osThreadFlagsSet (tid_rebotes, SIGRIGHT);
-		}	
-		else {
-		RIGHT = 0;
-		osThreadFlagsSet (tid_rebotes, SIGBAJADAR);
-		}		
-}
-}
-/**
-  * @brief  This function is executed in case of error occurrence.
-  * @param  None
-  * @retval None
-  */
-static void Error_Handler(void)
-{
-  /* User may add here some code to deal with this error */
-  while(1)
+static void Error_Handler(int fallo)
+{	
+	char buf[100];
+
+	if(fallo == 0)
+	/* Mensaje si se ha producido un error en la inicializacón de la librería HAL*/
+	printf(buf,"\r Se ha producido un error al inicializar la librería HAL\n");
+	else if (fallo == 1)
+	/* Mensaje si se ha producido un error en la inicializacón del reloj del sistema*/
+	printf(buf,"\r Se ha producido un error al inicializar el reloj del sistema\n");
+		else if(fallo == 2)
+	/* Mensaje si se ha producido un error en la inicializacón de la USART*/
+	printf(buf,"\r Se ha producido un error al inicializar la USART\n");
+	while(1)
   {
   }
 }
 
-#ifdef  USE_FULL_ASSERT
 
-/**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
-void assert_failed(uint8_t* file, uint32_t line)
-{ 
-  /* User can add his own implementation to report the file name and line number,
-     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-
-  /* Infinite loop */
-  while (1)
-  {
-  }
-}
-
-#endif
-
-/**
-  * @}
-  */ 
-
-/**
-  * @}
-  */ 
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
