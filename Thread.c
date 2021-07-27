@@ -90,8 +90,8 @@ static __NO_RETURN void rebotes (void *arg) {
 		
 		/*Se recibe señal de interrupción en el flanco de subida de la pulsación LEFT*/
 		if(flag == SIGLEFT){
-			/*Se realiza un delay de 50 ms para evitar los rebotes*/
-			osDelay(50);
+			/*Se realiza un delay de 20 ms para evitar los rebotes*/
+			osDelay(20);
 			/*Se activan las interrupciones por flanco de bajada en la pulsacion LEFT*/
 			IRQ_Fall_Enable(5);
 			/*Se limpia el flag generado por la señal de interrupción en el flanco de subida de la pulsación LEFT*/
@@ -100,8 +100,8 @@ static __NO_RETURN void rebotes (void *arg) {
 		
 		/*Se recibe señal de interrupción en el flanco de subida de la pulsación RIGHT*/
 		if(flag == SIGRIGHT){
-			/*Se realiza un delay de 50 ms para evitar los rebotes*/
-			osDelay(50);
+			/*Se realiza un delay de 20 ms para evitar los rebotes*/
+			osDelay(20);
 			/*Se activan la interrupciones por flanco de bajada en la pulsacion RIGHT*/
 			IRQ_Fall_Enable(10);
 			/*Se limpia el flag generado por la señal de interrupción en el flanco de subida de la pulsación RIGHT*/
@@ -110,8 +110,8 @@ static __NO_RETURN void rebotes (void *arg) {
 		
 		/*Se recibe señal de interrupción en el flanco de subida de la pulsación DOWN*/
 		if(flag == SIGDOWN){
-			/*Se realiza un delay de 50 ms para evitar los rebotes*/
-			osDelay(50);	
+			/*Se realiza un delay de 20 ms para evitar los rebotes*/
+			osDelay(20);	
 			/*Se activan las interrupciones por flanco de bajada en la pulsacion DOWN*/
 			IRQ_Fall_Enable(3);
 			/*Se limpia el flag generado por la señal de interrupción en el flanco de subida de la pulsación DOWN*/
@@ -120,8 +120,8 @@ static __NO_RETURN void rebotes (void *arg) {
 		
 		/*Se recibe señal de interrupción en el flanco de subida de la pulsación UP*/
 		if(flag == SIGUP){						
-			/*Se realiza un delay de 50 ms para evitar los rebotes*/
-			osDelay(50);						
+			/*Se realiza un delay de 20 ms para evitar los rebotes*/
+			osDelay(20);						
 			/*Se activan las interrupciones por flanco de bajada en la pulsacion UP*/
 			IRQ_Fall_Enable(2);			
 			/*Se limpia el flag generado por la señal de interrupción en el flanco de subida de la pulsación UP*/
@@ -130,8 +130,8 @@ static __NO_RETURN void rebotes (void *arg) {
 		
 		/*Se recibe señal de interrupción en el flanco de subida de la pulsación CENTER*/
 		if(flag == SIGCENTER){						
-			/*Se realiza un delay de 50 ms para evitar los rebotes*/
-			osDelay(50);						
+			/*Se realiza un delay de 20 ms para evitar los rebotes*/
+			osDelay(20);						
 			/*Se activan las interrupciones por flanco de bajada en la pulsacion CENTER*/
 			IRQ_Fall_Enable(14);			
 			/*Se limpia el flag generado por la señal de interrupción en el flanco de subida de la pulsación LEFT*/
