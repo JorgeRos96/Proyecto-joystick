@@ -40,10 +40,14 @@
 #define RTE_DEVICE_HAL_DMA
 /*  Keil::Device:STM32Cube HAL:GPIO:1.7.9 */
 #define RTE_DEVICE_HAL_GPIO
+/*  Keil::Device:STM32Cube HAL:IWDG:1.7.9 */
+#define RTE_DEVICE_HAL_IWDG
 /*  Keil::Device:STM32Cube HAL:PWR:1.7.9 */
 #define RTE_DEVICE_HAL_PWR
 /*  Keil::Device:STM32Cube HAL:RCC:1.7.9 */
 #define RTE_DEVICE_HAL_RCC
+/*  Keil::Device:STM32Cube HAL:TIM:1.7.9 */
+#define RTE_DEVICE_HAL_TIM
 /*  Keil::Device:STM32Cube HAL:USART:1.7.9 */
 #define RTE_DEVICE_HAL_USART
 /*  Keil::Device:Startup:2.6.3 */
