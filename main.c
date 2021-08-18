@@ -18,7 +18,14 @@
 	*					 que son:
 	*							-Pin de tx: PD8
 	*							-Pin de rx: PD9
-	*					
+	
+	*					 Se utiliza el speaker de la tarjeta de aplicacones para emitir un 
+	*					 zumbido cada vez que se realiza una pulsación. El speaker se va a utilizar
+	*					 a traves del Timer 1 para crear la señal PWM a traves del canal 1.
+	*					 Por lo que el speaker de la tarjeta de aplicaciones (P26) se conecta:
+	*					 		
+	*					 Canal 1 del Timer 1: PE9
+	*
 	*					 Se conecta el joystick a los siguientes pines:
 	*						
 	*					 PIN UP-> 	 PF2	
@@ -39,6 +46,9 @@
 #include "main.h"
 #include "USART.h"
 #include "joystick.h"
+#include "speaker.h"
+#include "Delay.h" 	
+#include "Watchdog.h"
 
 #ifdef _RTE_
 #include "RTE_Components.h"             // Component selection
@@ -84,7 +94,10 @@ static void Error_Handler(int fallo);
   */
 int main(void)
 {
-
+	/*Inicialización del IWDG*/
+	if (init_Watchdog() != 0)
+			Error_Handler(4);
+	
   /* STM32F4xx HAL library initialization:
        - Configure the Flash prefetch, Flash preread and Buffer caches
        - Systick timer is configured by default as source of time base, but user 
@@ -103,6 +116,11 @@ int main(void)
 	
 	/*Inicialización del joystick*/
 	Init_GPIO();
+		if (init_speaker() != HAL_OK)
+		Error_Handler(3);
+		
+	/*Inicializaciñon del Delay*/
+	Init_Delay(180,4);
 	
 	/* Inicialización de la USART a traves de la función init_USART de la libreria USART
 	*	 y habilitación de la transmisión
@@ -128,6 +146,7 @@ int main(void)
   /* Infinite loop */
   while (1)
   {
+				
   }
 }
 
@@ -229,6 +248,13 @@ static void Error_Handler(int fallo)
 		else if(fallo == 2)
 	/* Mensaje si se ha producido un error en la inicializacón de la USART*/
 	printf(buf,"\r Se ha producido un error al inicializar la USART\n");
+	else if (fallo == 3)
+		/* Mensaje si se ha producido un error en la inicializacón del Timer del speaker*/
+		printf(buf,"\r Se ha producido un error al inicializar el Timer 1\n");
+	else if (fallo == 4)
+		/* Mensaje si se ha producido un error en la inicialización del Watchdog*/
+		printf(buf,"\r Se ha producido un error al inicializar el Watchdog\n");
+
 	while(1)
   {
   }

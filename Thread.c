@@ -21,6 +21,8 @@
 #include "cmsis_os2.h"  
 #include "USART.h"
 #include "joystick.h"
+#include "USART.h"
+#include "Watchdog.h"
 
 #define SIGLEFT    0x001
 #define SIGDOWN    0x002
@@ -85,7 +87,7 @@ static __NO_RETURN void rebotes (void *arg) {
   while (1) {
 		
 		/*Se espera al envío de la señal desde la función de callback de las interrupciones del joystick*/
-		flag = osThreadFlagsWait (0x3FF, osFlagsWaitAny, osWaitForever);
+		flag = osThreadFlagsWait (0x3FF, osFlagsWaitAny, 50);
 
 		
 		/*Se recibe señal de interrupción en el flanco de subida de la pulsación LEFT*/
@@ -145,7 +147,9 @@ static __NO_RETURN void rebotes (void *arg) {
 			/*Se limpia el flag generado por la señal de interrupción en el flanco de bajada de la pulsación LEFT*/
 			osThreadFlagsClear(SIGBAJADAL);			
 			/*Se incrementa el condaor de la pulsación LEFT*/
-			contLeft++;			 
+			contLeft++;		
+			/*Zumbido al realizar la pulsación*/
+			zumbido(100);			
 			/*Se envía mensaje al terminal a traves de la USART indicando la pulsación LEFT y el número de pulsación*/
 			size = sprintf(buf,"\r Pulsacion izquierda numero %d", contLeft);
 			tx_USART(buf, size);
@@ -158,7 +162,9 @@ static __NO_RETURN void rebotes (void *arg) {
 			/*Se limpia el flag generado por la señal de interrupción en el flanco de bajada de la pulsación RIGHT*/
 			osThreadFlagsClear(SIGBAJADAR);					
 			/*Se incrementa el condaor de la pulsación RIGHT*/
-			contRight++;						
+			contRight++;	
+			/*Zumbido al realizar la pulsación*/
+			zumbido(100);				
 			/*Se envía mensaje al terminal a traves de la USART indicando la pulsación RIGHT y el número de pulsación*/
 			size = sprintf(buf,"\r Pulsacion derecha numero %d",contRight);
 			tx_USART(buf, size);			
@@ -171,7 +177,9 @@ static __NO_RETURN void rebotes (void *arg) {
 			/*Se limpia el flag generado por la señal de interrupción en el flanco de bajada de la pulsación UP*/
 			osThreadFlagsClear(SIGBAJADAU);									
 			/*Se incrementa el condaor de la pulsación UP*/
-			contUp++;						
+			contUp++;
+			/*Zumbido al realizar la pulsación*/
+			zumbido(100);				
 			/*Se envía mensaje al terminal a traves de la USART indicando la pulsación UP y el número de pulsación*/
 			size = sprintf(buf,"\r Pulsacion arriba numero %d",contUp);
 			tx_USART(buf, size);			
@@ -184,7 +192,9 @@ static __NO_RETURN void rebotes (void *arg) {
 			/*Se limpia el flag generado por la señal de interrupción en el flanco de bajada de la pulsación DOWN*/
 			osThreadFlagsClear(SIGBAJADAD);						
 			/*Se incrementa el condaor de la pulsación DOWN*/
-			contDown++;									
+			contDown++;			
+			/*Zumbido al realizar la pulsación*/
+			zumbido(100);				
 			/*Se envía mensaje al terminal a traves de la USART indicando la pulsación LEFT y el número de pulsación*/
 			size = sprintf(buf,"\r Pulsacion abajo numero %d",contDown);
 			tx_USART(buf, size);
@@ -197,11 +207,14 @@ static __NO_RETURN void rebotes (void *arg) {
 			/*Se limpia el flag generado por la señal de interrupción en el flanco de bajada de la pulsación CENTER*/
 			osThreadFlagsClear(SIGBAJADAC);									
 			/*Se incrementa el condaor de la pulsación CENTER*/
-			contCenter++;						
+			contCenter++;
+			/*Zumbido al realizar la pulsación*/
+			zumbido(100);				
 			/*Se envía mensaje al terminal a traves de la USART indicando la pulsación CENTER y el número de pulsación*/
 			size = sprintf(buf,"\r Pulsacion central numero %d", contCenter);
 			tx_USART(buf, size);
 		}
+		reset_Watchdog();
   }
 }
 
